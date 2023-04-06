@@ -1,4 +1,3 @@
-import dataclasses
 import os
 import shlex
 import subprocess
@@ -6,12 +5,12 @@ import unittest
 import re
 from copy import deepcopy
 from datetime import datetime
-from datetime import timedelta
 from pathlib import Path
 from typing import Dict
 from typing import List
 from typing import Optional
 
+from .result import Result
 
 # These are environment variable names used by the application
 CT_API_KEY = "CLOUDTRUTH_API_KEY"
@@ -104,30 +103,6 @@ def skip_known_issue(msg: str):
     return unittest.skipUnless(os.environ.get(CT_TEST_KNOWN_ISSUES), f"Known issue: {msg}")
 
 
-@dataclasses.dataclass
-class Result:
-    return_value: int = 0
-    stdout: List = dataclasses.field(default_factory=list)
-    stderr: List = dataclasses.field(default_factory=list)
-    timediff: timedelta = timedelta(0)
-    command: Optional[str] = None
-
-    def out(self) -> str:
-        return "\n".join(self.stdout)
-
-    def err(self) -> str:
-        return "\n".join(self.stderr)
-
-    def out_contains(self, needle: str) -> Optional[str]:
-        for line in self.stdout:
-            if needle in line:
-                return line
-        return None
-
-    def all(self) -> str:
-        return self.out() + "\n" + self.err()
-
-
 class TestCase(unittest.TestCase):
     """
     This extends the unittest.TestCase to add some basic functions
@@ -140,29 +115,15 @@ class TestCase(unittest.TestCase):
         self.log_commands_on_failure = int(os.environ.get(CT_TEST_LOG_COMMANDS_ON_FAILURE, "0"))
         self.log_output_on_failure = int(os.environ.get(CT_TEST_LOG_OUTPUT_ON_FAILURE, "0"))
         self.job_id = os.environ.get(CT_TEST_JOB_ID)
-        self.rest_debug = os.environ.get(CT_REST_DEBUG, "False").lower() in ("true", "1", "y", "yes")
         self._failure_logs = None
-        self._projects = None
-        self._environments = None
-        self._users = None
-        self._invites = None
-        self._types = None
         self._filenames = None
-        self._groups = None
         super().__init__(*args, **kwargs)
         self.maxDiff = None
 
     def setUp(self) -> None:
         # collects logs to display when/if the test case fails
         self._failure_logs = list()
-        # start each test with empty sets for projects and environments
-        self._projects = list()
-        self._environments = list()
-        self._users = list()
-        self._invites = list()
-        self._types = list()
         self._filenames = set()
-        self._groups = list()
         super().setUp()
 
     def tearDown(self) -> None:
@@ -180,42 +141,9 @@ class TestCase(unittest.TestCase):
                 print()  # gives better reading output
                 print("\n".join(self._failure_logs))
 
-        # tear down any possibly lingering projects -- they should have been deleted in reverse
-        # order in case there are any children.
-        for proj in reversed(self._projects):
-            cmd = self._base_cmd + f'proj del "{proj}" --confirm'
-            subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-        # tear down any possibly lingering environments -- they should have been deleted in reverse
-        # order in case there are any children.
-        for env in reversed(self._environments):
-            cmd = self._base_cmd + f'env del "{env}" --confirm'
-            subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-        # delete any possibly lingering users
-        for usr in self._users:
-            cmd = self._base_cmd + f'user del --confirm "{usr}"'
-            subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-        # delete any possibly lingering invitations
-        for email in self._invites:
-            cmd = self._base_cmd + f'user invitations del --confirm "{email}"'
-            subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-        # tear down any possibly lingering types -- they should have been deleted in reverse
-        # order in case there are any children.
-        for typename in reversed(self._types):
-            cmd = self._base_cmd + f'type del "{typename}" --confirm'
-            subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
         # remove any added files
         for fname in self._filenames:
             os.remove(fname)
-
-        # remove any added groups
-        for groupname in self._groups:
-            cmd = self._base_cmd + f'group del "{groupname}" --confirm'
-            subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         super().tearDown()
 
@@ -240,15 +168,6 @@ class TestCase(unittest.TestCase):
         if not self.job_id:
             return name
         return name + "-" + self.job_id
-
-    def get_cli_base_cmd(self) -> str:
-        """
-        Finds where to get the executable image from.
-        The result includes an extra space, and whatever other args may be necessary (e.g. api_key)
-        """
-        if not self._base_cmd:
-            self._base_cmd = get_cli_base_cmd()
-        return self._base_cmd
 
     def get_cmd_env(self):
         env_copy = deepcopy(os.environ)
@@ -330,50 +249,6 @@ class TestCase(unittest.TestCase):
                     return arg_list[index + 1]
             return None
 
-        # split the command args into something we can work with
-        args = shlex.split(cmd)
-        if "set" in args:
-            # if we're using any of our 'environments' aliases
-            if set(args) & set(["environments", "environment", "envs", "env", "e"]):
-                env_name = _next_part(args, "set")
-                if env_name and env_name not in self._environments:
-                    self._environments.append(env_name)
-                env_name = _next_part(args, "--rename") or _next_part(args, "-r")
-                if env_name and env_name not in self._environments:
-                    self._environments.append(env_name)
-            # if we're using any of our 'projects' aliases
-            elif set(args) & set(["projects", "project", "proj"]):
-                proj_name = _next_part(args, "set")
-                if proj_name and proj_name not in self._projects:
-                    self._projects.append(proj_name)
-                proj_name = _next_part(args, "--rename") or _next_part(args, "-r")
-                if proj_name and proj_name not in self._projects:
-                    self._projects.append(proj_name)
-            elif set(args) & set(["users", "user", "us"]):
-                user_name = _next_part(args, "set")
-                if user_name and user_name not in self._users:
-                    self._users.append(user_name)
-            elif set(args) & set(["invitations", "invites", "invite", "inv", "in"]):
-                email = _next_part(args, "set")
-                if email and email not in self._invites:
-                    self._invites.append(email)
-            elif set(args) & set(["parameter-types", "param-types", "param-type", "types", "type", "ty"]):
-                typename = _next_part(args, "set")
-                if typename and typename not in self._types:
-                    self._types.append(typename)
-            elif set(args) & set(["group", "grp", "gr", "g"]):
-                groupname = _next_part(args, "set")
-                if groupname and groupname not in self._groups:
-                    self._groups.append(groupname)
-
-        ## determine if we should strip REST debug logs from the command output. note that in get_cmd_env() we remove
-        ## CLOUDTRUTH_REST_DEBUG variable from the local copy. this makes it possible to detect if a test case
-        ## explicitly set it and thus wants the debug logs in its output
-        orig_rest_debug_value = env.get(CT_REST_DEBUG)
-        strip_rest_debug = self.rest_debug and not orig_rest_debug_value
-        if strip_rest_debug:
-            env[CT_REST_DEBUG] = "true"
-
         start = datetime.now()
         process = subprocess.run(cmd, env=env, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         delta = datetime.now() - start
@@ -386,7 +261,6 @@ class TestCase(unittest.TestCase):
         )
 
         ## Log outputs
-        ## TODO: may want to consider using TextTestRunners buffer option for log-on-failure behavior)
         if self.log_output:
             if result.stdout:
                 print("\n".join(result.stdout))
@@ -401,323 +275,3 @@ class TestCase(unittest.TestCase):
             debug_out = [line for line in result.stdout if re.match(REGEX_REST_DEBUG, line)]
             if debug_out:
                 print("\n".join(debug_out))
-
-        if strip_rest_debug:
-            ## if stripping debug output, re-enable original CLOUDTRUTH_REST_DEBUG value if previously found
-            if orig_rest_debug_value is not None:
-                env[CT_REST_DEBUG] = orig_rest_debug_value
-            else:
-                del env[CT_REST_DEBUG]
-            ## now strip logs from output before returning. do this after the logging steps above so that console has
-            ## complete logs, but test cases have stripped logs
-            result.stdout = [line for line in result.stdout if not re.match(REGEX_REST_DEBUG, line)]
-
-        return result
-
-    def add_environment_for_cleanup(self, env_name: str) -> None:
-        if env_name not in self._environments:
-            self._environments.append(env_name)
-
-    def add_project_for_cleanup(self, proj_name: str):
-        if proj_name not in self._projects:
-            self._projects.append(proj_name)
-
-    def get_cli_entries(self, env: Dict[str, str], cmd: str, label: str) -> Optional[List[Dict]]:
-        result = self.run_cli(env, cmd)
-        self.assertResultSuccess(result)
-        if result.out().startswith("No "):
-            return []
-        return eval(result.out()).get(label)
-
-    def get_profile(self, cmd_env, prof_name: str) -> Optional[Dict]:
-        result = self.run_cli(cmd_env, self._base_cmd + "config prof list --values --format csv -s")
-        self.assertResultSuccess(result)
-        needle = f"{prof_name},"
-        for line in result.stdout:
-            if line.startswith(needle):
-                values = line.split(",")
-                return {
-                    "Name": values[0],
-                    "API": values[1],
-                    "Environment": values[2],
-                    "Project": values[3],
-                    "Description": values[4],
-                }
-        return None
-
-    def get_current_config(self, cmd_env, property_name: str) -> Optional[str]:
-        result = self.run_cli(cmd_env, self._base_cmd + "config curr --format json")
-        self.assertResultSuccess(result)
-        profile_props = eval(result.out()).get("profile", [])
-        for prop in profile_props:
-            if prop.get("Parameter") == property_name:
-                return prop.get("Value", None)
-        return None
-
-    def create_project(self, cmd_env, proj_name: str, parent: Optional[str] = None) -> Result:
-        proj_cmd = self._base_cmd + f"proj set '{proj_name}' -d '{AUTO_DESCRIPTION}' "
-        if parent:
-            proj_cmd += f"--parent '{parent}'"
-        result = self.run_cli(cmd_env, proj_cmd)
-        self.assertResultSuccess(result)
-        self.assertIn(f"Created project '{proj_name}'", result.out())
-        return result
-
-    def delete_project(self, cmd_env, proj_name: str) -> Result:
-        result = self.run_cli(cmd_env, self._base_cmd + f"proj delete '{proj_name}' --confirm")
-        self.assertResultSuccess(result)
-        return result
-
-    def create_environment(self, cmd_env, env_name: str, parent: Optional[str] = None) -> Result:
-        cmd = self._base_cmd + f"env set '{env_name}' "
-        if parent:
-            cmd += f"-p '{parent}' "
-        cmd += f"-d '{AUTO_DESCRIPTION}'"
-        result = self.run_cli(cmd_env, cmd)
-        self.assertResultSuccess(result)
-        self.assertIn(f"Created environment '{env_name}'", result.out())
-        return result
-
-    def delete_environment(self, cmd_env, env_name: str) -> Result:
-        result = self.run_cli(cmd_env, self._base_cmd + f"env del '{env_name}' --confirm")
-        self.assertResultSuccess(result)
-        return result
-
-    def create_type(
-        self,
-        cmd_env,
-        type_name: str,
-        parent: Optional[str] = None,
-        extra: Optional[str] = None,
-    ) -> Result:
-        type_cmd = self._base_cmd + f"param-type set '{type_name}' -d '{AUTO_DESCRIPTION}' "
-        if parent:
-            type_cmd += f"--parent '{parent}' "
-        if extra:
-            type_cmd += extra
-        result = self.run_cli(cmd_env, type_cmd)
-        self.assertResultSuccess(result)
-        self.assertIn(f"Created parameter type '{type_name}'", result.out())
-        return result
-
-    def delete_type(self, cmd_env, type_name: str) -> Result:
-        result = self.run_cli(cmd_env, self._base_cmd + f"param-type delete '{type_name}' --confirm")
-        self.assertResultSuccess(result)
-        return result
-
-    def create_env_tag(
-        self, cmd_env, env_name: str, tag_name: str, desc: Optional[str] = None, time: Optional[str] = None
-    ) -> None:
-        cmd = self._base_cmd + f"env tag set '{env_name}' '{tag_name}' "
-        if desc:
-            cmd += f"--desc '{desc}'"
-        if time:
-            cmd += f"--time '{time}' "
-        result = self.run_cli(cmd_env, cmd)
-        self.assertResultSuccess(result)
-        self.assertIn("Created", result.out())
-
-    def delete_env_tag(self, cmd_env, env_name: str, tag_name: str) -> None:
-        cmd = self._base_cmd + f"env tag del '{env_name}' '{tag_name}' -y "
-        result = self.run_cli(cmd_env, cmd)
-        self.assertResultSuccess(result)
-        self.assertIn("Deleted", result.out())
-
-    def set_param(
-        self,
-        cmd_env,
-        proj: str,
-        name: str,
-        value: Optional[str] = None,
-        secret: Optional[bool] = None,
-        env: Optional[str] = None,
-        desc: Optional[str] = None,
-        param_type: Optional[str] = None,
-        fqn: Optional[str] = None,
-        jmes: Optional[str] = None,
-        evaluate: Optional[bool] = None,
-        extra: Optional[str] = None,
-    ) -> Result:
-        cmd = self._base_cmd + f"--project '{proj}' "
-        if env:
-            cmd += f"--env '{env}' "
-        cmd += f"param set '{name}' "
-        if value:
-            cmd += f"--value '{value}' "
-        if secret is not None:
-            cmd += f"--secret '{str(secret).lower()}' "
-        if desc:
-            cmd += f"--desc '{desc}' "
-        if param_type:
-            cmd += f"--type '{param_type}' "
-        if fqn:
-            cmd += f"--fqn '{fqn}' "
-        if jmes:
-            cmd += f"--jmes '{jmes}' "
-        if evaluate is not None:
-            cmd += f"--evaluate '{str(evaluate).lower()}' "
-        if extra:
-            cmd += extra
-        result = self.run_cli(cmd_env, cmd)
-        self.assertResultSuccess(result)
-        return result
-
-    def get_param(
-        self,
-        cmd_env,
-        proj: str,
-        name: str,
-        env: Optional[str] = None,
-        secrets: Optional[bool] = None,
-        as_of: Optional[str] = None,
-    ) -> Optional[Dict]:
-        cmd = self._base_cmd + f"--project '{proj}' "
-        if env:
-            cmd += f"--env '{env}' "
-        cmd += "param list --show-times --format json "
-        if as_of:
-            cmd += f"--as-of '{as_of}' "
-        if secrets:
-            cmd += "--secrets "
-        result = self.run_cli(cmd_env, cmd)
-        self.assertResultSuccess(result)
-        parameters = eval(result.out())
-        for item in parameters["parameter"]:
-            if item.get("Name") == name:
-                return item
-        return None
-
-    def unset_param(
-        self,
-        cmd_env,
-        proj: str,
-        name: str,
-        env: Optional[str] = None,
-    ) -> Result:
-        cmd = self._base_cmd + f"--project '{proj}' "
-        if env:
-            cmd += f"--env '{env}' "
-        cmd += f"param unset '{name}' "
-        result = self.run_cli(cmd_env, cmd)
-        self.assertResultSuccess(result)
-        return result
-
-    def delete_param(self, cmd_env, proj: str, name: str, env: Optional[str] = None) -> Result:
-        cmd = self._base_cmd + f"--project '{proj}' "
-        if env:
-            cmd += f"--env '{env}' "
-        cmd += f"param delete -y '{name}'"
-        result = self.run_cli(cmd_env, cmd)
-        self.assertResultSuccess(result)
-        return result
-
-    def verify_param(
-        self,
-        cmd_env,
-        proj: str,
-        name: str,
-        value: str,
-        env: Optional[str] = None,
-        as_of: Optional[str] = None,
-    ):
-        cmd = self._base_cmd + f"--project '{proj}' "
-        if env:
-            cmd += f"--env '{env}' "
-        # check the output using the 'get' command
-        cmd += f"param get '{name}' "
-        if as_of:
-            cmd += f"--as-of '{as_of}' "
-
-        result = self.run_cli(cmd_env, cmd)
-        self.assertResultSuccess(result)
-        self.assertIn(value, result.out())
-
-    def list_params(
-        self,
-        cmd_env,
-        proj: str,
-        env: Optional[str] = None,
-        show_values: bool = True,
-        secrets: bool = False,
-        fmt: Optional[str] = None,
-        as_of: Optional[str] = None,
-        show_times: bool = False,
-        show_rules: bool = False,
-        show_external: bool = False,
-        show_evaluated: bool = False,
-        show_parents: bool = False,
-        show_children: bool = False,
-    ) -> Result:
-        cmd = self._base_cmd + f"--project '{proj}' "
-        if env:
-            cmd += f"--env '{env}' "
-        cmd += "param ls "
-        if fmt:
-            cmd += f"-f {fmt} "
-        if as_of:
-            cmd += f"--as-of '{as_of}' "
-        if secrets:
-            cmd += "-s "
-        if show_values:
-            cmd += "-v "
-        if show_times:
-            cmd += "--show-times "
-        if show_rules:
-            cmd += "--rules "
-        if show_external:
-            cmd += "--external "
-        if show_evaluated:
-            cmd += "--evaluated "
-        if show_parents:
-            cmd += "--parents "
-        if show_children:
-            cmd += "--children "
-
-        result = self.run_cli(cmd_env, cmd)
-        self.assertResultSuccess(result)
-        return result
-
-    def set_template(
-        self, cmd_env, proj: str, name: str, body: Optional[str] = None, description: Optional[str] = None
-    ) -> Result:
-        cmd = self._base_cmd + f"--project '{proj}' template set '{name}' "
-        filename = None
-        if body:
-            filename = "temp-set-template-body.txt"
-            self.write_file(filename, body)
-            cmd += f"-b '{filename}' "
-        if description:
-            cmd += f"-d '{description}' "
-        result = self.run_cli(cmd_env, cmd)
-        self.assertResultSuccess(result)
-
-        if filename:
-            self.delete_file(filename)
-        return result
-
-    def delete_template(self, cmd_env, proj: str, name: str):
-        cmd = self._base_cmd + f"--project '{proj}' template del -y '{name}' "
-        result = self.run_cli(cmd_env, cmd)
-        self.assertResultSuccess(result)
-
-    def current_username(self, cmd_env) -> str:
-        result = self.run_cli(cmd_env, self._base_cmd + "config current -f json")
-        self.assertResultSuccess(result)
-        properties = eval(result.out()).get("profile")
-        entry = find_by_prop(properties, "Parameter", "User")[0]
-        return entry.get("Value")
-
-    # creates a new user and returns the API key
-    def add_user(self, cmd_env, user_name: str, role: str = "contrib") -> str:
-        result = self.run_cli(cmd_env, self._base_cmd + f"user set '{user_name}' --role '{role}'")
-        self.assertResultSuccess(result)
-        self.assertIn("Created service account", result.out())
-        if len(result.stdout) > 1:
-            # the api token is the second line
-            api_token = result.stdout[1]
-            return api_token
-        return None
-
-    def delete_user(self, cmd_env, user_name):
-        result = self.run_cli(cmd_env, self._base_cmd + f"user delete '{user_name}' -y")
-        self.assertResultSuccess(result)
