@@ -4,6 +4,7 @@ from datetime import timedelta
 from typing import List
 from typing import Optional
 
+
 @dataclass
 class Result:
     return_value: int = 0

@@ -37,11 +37,11 @@ class IntegrationTestCase(unittest.TestCase):
     """
 
     def __init__(self, *args, **kwargs):
-        self.log_commands : int = int(os.environ.get(PYINT_LOG_COMMANDS, "0"))
-        self.log_output : int = int(os.environ.get(PYINT_LOG_OUTPUT, "0"))
+        self.log_commands: int = int(os.environ.get(PYINT_LOG_COMMANDS, "0"))
+        self.log_output: int = int(os.environ.get(PYINT_LOG_OUTPUT, "0"))
         self.capture_scheme: Optional[str] = os.environ.get(PYINT_CAPTURE)
-        self.job_id : Optional[int] = os.environ.get(PYINT_JOB_ID)
-        self._capture_data : List[str] = None
+        self.job_id: Optional[int] = os.environ.get(PYINT_JOB_ID)
+        self._capture_data: List[str] = None
         self.capture_separator: str = "**************************"
         self._filenames = None
         super().__init__(*args, **kwargs)
@@ -61,7 +61,7 @@ class IntegrationTestCase(unittest.TestCase):
             or (not self.isSuccessful())
         ):
             self.writeCaptureData()
-    
+
         # remove any added files
         for fname in self._filenames:
             os.remove(fname)
@@ -71,7 +71,7 @@ class IntegrationTestCase(unittest.TestCase):
     def writeCaptureData(self) -> None:
         if not self._capture_data:
             return
-        
+
         filename = f"{self._testMethodName}_commands{'_' + self.job_id if self.job_id else ''}.log"
         try:
             file = open(filename, "w")
@@ -112,11 +112,6 @@ class IntegrationTestCase(unittest.TestCase):
         if not self.job_id:
             return name
         return name + "-" + self.job_id
-
-    def get_display_env_command(self) -> str:
-        if os.name == "nt":
-            return "SET"
-        return "printenv"
 
     def assertResultSuccess(self, result: Result, success_msg: Optional[str] = None):
         """
@@ -191,7 +186,7 @@ class IntegrationTestCase(unittest.TestCase):
             command=cmd,
         )
 
-        ## Log outputs
+        # Log outputs
         if self.log_output:
             if result.stdout:
                 print("\n".join(result.stdout))
