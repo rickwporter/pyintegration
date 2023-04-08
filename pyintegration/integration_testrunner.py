@@ -97,17 +97,6 @@ def debugTestRunner(enable_debug: bool, verbosity: int, failfast: bool):
     )
 
 
-def print_suite(suite):
-    if hasattr(suite, "__iter__"):
-        for x in suite:
-            print_suite(x)
-    elif hasattr(suite, "_testMethodName"):
-        name = getattr(suite, "_testMethodName")
-        print(f"{name}")
-    else:
-        print("invalid")
-
-
 def filter_suite(suite, func):
     for testmodule in suite:
         for testsuite in testmodule:
@@ -324,6 +313,20 @@ class IntegrationTestRunner:
 
         return (suite, applied_filter)
 
+    def printSuite(self, suite) -> None:
+        if hasattr(suite, "__iter__"):
+            for x in suite:
+                suite.printSuite(x)
+        elif hasattr(suite, "_testMethodName"):
+            name = getattr(suite, "_testMethodName")
+            print(f"{name}")
+        else:
+            print("invalid")
+        return
+
+    def writeReport(self, results) -> None:
+        write_reports(results)
+
     def run(self, *args) -> int:
         args = self.parseArgs(*args)
 
@@ -339,7 +342,7 @@ class IntegrationTestRunner:
             return 3
 
         if args.list_only:
-            print_suite(suite)
+            self.printSuite(suite)
             return 0
 
         debug = args.debug or args.pdb
@@ -348,7 +351,7 @@ class IntegrationTestRunner:
         test_result = runner.run(suite)
 
         if args.reports:
-            write_reports(test_result)
+            self.writeReports(test_result)
 
         rval = 0
         if len(test_result.errors):
