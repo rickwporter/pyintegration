@@ -1,7 +1,7 @@
 import os
+import re
 import subprocess
 import unittest
-import re
 
 from datetime import datetime
 from typing import Dict
@@ -91,7 +91,7 @@ class IntegrationTestCase(unittest.TestCase):
         success = all(test != self for test, _ in result.errors + result.failures)
         return success
 
-    def write_file(self, filename: str, content: str) -> None:
+    def writeFile(self, filename: str, content: str) -> None:
         """
         Utility to open set the filename content, and save the name in the list
         for deletion.
@@ -101,11 +101,11 @@ class IntegrationTestCase(unittest.TestCase):
         file.write(content)
         file.close()
 
-    def delete_file(self, filename):
+    def deleteFile(self, filename):
         self._filenames.remove(filename)
         os.remove(filename)
 
-    def make_name(self, name: str) -> str:
+    def fullName(self, name: str) -> str:
         """
         Adds the JOB_ID to the name if present, so multiple tests can run simultaneously.
         """
