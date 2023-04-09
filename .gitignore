@@ -1,0 +1,28 @@
+# backup stuff
+**/*~
+**/*bak
+
+# Build Artifacts
+/target
+*.log
+*.pdb
+**/*.rs.bk
+
+# Python libraries
+**/__pycache__/
+
+# Eclipse settings stuff
+.project
+
+# PyCharm stuff
+.idea/
+
+# VSCode stuff
+.vscode/
+*.code-workspace
+
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
