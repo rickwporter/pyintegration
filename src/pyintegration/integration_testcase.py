@@ -1,8 +1,11 @@
 import os
+import requests
 import subprocess
 import unittest
 
 from datetime import datetime
+from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -226,3 +229,42 @@ class IntegrationTestCase(unittest.TestCase):
 
         self.logResult(result)
         return result
+
+    def curl(
+        self,
+        method: str,
+        url: str,
+        body: Optional[Any] = None,
+        filter_func: Optional[Callable[[str], bool]] = None,
+        filter_desc: Optional[str] = None,
+    ):
+        command = f"curl -X {method} {url} {filter_desc or ''}"
+        if self.print_commands:
+            print(command)
+
+        start = datetime.now()
+        try:
+            resp = requests.request(method, url, data=body)
+            delta = datetime.now() - start
+            rv = 0 if resp.ok else resp.status_code
+            stdout = [""] if not resp.text else resp.text.split('\n')
+            stderr = []
+        except Exception as ex:
+            delta = datetime.now() - start
+            rv = -1
+            stdout = []
+            stderr = str(ex).split('\n')
+
+        if filter_func and stdout:
+            stdout = [_ for _ in stdout if filter_func(_)]
+
+        if self.print_output:
+            print('\n'.join(stdout))
+
+        return Result(
+            command=command,
+            return_value=rv,
+            timediff=delta,
+            stdout=stdout,
+            stderr=stderr
+        )
