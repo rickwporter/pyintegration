@@ -1,5 +1,7 @@
 
 # Not quite sure why we'd need to include these, but doing it for completeness
+from .background_process import BackgroundProcess
+
 from .constants import PYINT_CAPTURE
 from .constants import PYINT_JOB_ID
 from .constants import PYINT_KNOWN_ISSUES
