@@ -10,6 +10,9 @@
 
 # Python libraries
 **/__pycache__/
+**/*.egg-info
+dist/
+build/
 
 # Eclipse settings stuff
 .project
