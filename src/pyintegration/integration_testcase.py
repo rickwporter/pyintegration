@@ -11,8 +11,8 @@ from .constants import PYINT_CAPTURE
 from .constants import PYINT_JOB_ID
 from .constants import PYINT_KNOWN_ISSUES
 from .result import Result
-from .utils import env_print_commands
-from .utils import env_print_output
+from .utils import envPrintCommands
+from .utils import envPrintOutput
 
 
 def find_by_prop(entries: List[Dict], prop_name: str, prop_value: str) -> List[Dict]:
@@ -34,8 +34,8 @@ class IntegrationTestCase(unittest.TestCase):
     """
 
     def __init__(self, *args, **kwargs):
-        self.print_commands: int = env_print_commands()
-        self.print_output: int = env_print_output()
+        self.print_commands: int = envPrintCommands()
+        self.print_output: int = envPrintOutput()
         self.capture_scheme: Optional[str] = os.environ.get(PYINT_CAPTURE)
         self.job_id: Optional[int] = os.environ.get(PYINT_JOB_ID)
         self._capture_data: List[str] = None
