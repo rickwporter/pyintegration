@@ -1,5 +1,4 @@
 import os
-import re
 import subprocess
 import unittest
 
@@ -11,11 +10,9 @@ from typing import Optional
 from .constants import PYINT_CAPTURE
 from .constants import PYINT_JOB_ID
 from .constants import PYINT_KNOWN_ISSUES
-from .constants import PYINT_LOG_COMMANDS
-from .constants import PYINT_LOG_OUTPUT
 from .result import Result
-
-REGEX_REST_DEBUG = re.compile("^URL \\w+ .+? elapsed: [\\d\\.]+\\w+$")
+from .utils import env_print_commands
+from .utils import env_print_output
 
 
 def find_by_prop(entries: List[Dict], prop_name: str, prop_value: str) -> List[Dict]:
@@ -37,8 +34,8 @@ class IntegrationTestCase(unittest.TestCase):
     """
 
     def __init__(self, *args, **kwargs):
-        self.log_commands: int = int(os.environ.get(PYINT_LOG_COMMANDS, "0"))
-        self.log_output: int = int(os.environ.get(PYINT_LOG_OUTPUT, "0"))
+        self.print_commands: int = env_print_commands()
+        self.print_output: int = env_print_output()
         self.capture_scheme: Optional[str] = os.environ.get(PYINT_CAPTURE)
         self.job_id: Optional[int] = os.environ.get(PYINT_JOB_ID)
         self._capture_data: List[str] = None
@@ -172,7 +169,7 @@ class IntegrationTestCase(unittest.TestCase):
         # WARNING: DOS prompt does not like the single quotes, so use double
         cmd = cmd.replace("'", '"')
 
-        if self.log_commands:
+        if self.print_commands:
             print(cmd)
 
         start = datetime.now()
@@ -187,7 +184,7 @@ class IntegrationTestCase(unittest.TestCase):
         )
 
         # Log outputs
-        if self.log_output:
+        if self.print_output:
             if result.stdout:
                 print("\n".join(result.stdout))
             if result.stderr:

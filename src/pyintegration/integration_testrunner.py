@@ -17,8 +17,8 @@ from typing import Tuple
 from .constants import PYINT_CAPTURE
 from .constants import PYINT_JOB_ID
 from .constants import PYINT_KNOWN_ISSUES
-from .constants import PYINT_LOG_COMMANDS
-from .constants import PYINT_LOG_OUTPUT
+from .constants import PYINT_PRINT_COMMANDS
+from .constants import PYINT_PRINT_OUTPUT
 from .reports import write_reports
 from .testcase_results import ERROR
 from .testcase_results import FAILURE
@@ -183,23 +183,23 @@ class IntegrationTestRunner:
             help="Unittest verbosity level (default: %(default)s)",
         )
         parser.add_argument(
-            "-lc",
-            "--log-commands",
-            dest="log_commands",
+            "-pc",
+            "--print-commands",
+            dest="print_commands",
             action="store_true",
             help="Print the commands to stdout",
         )
         parser.add_argument(
-            "-lo",
-            "--log-output",
-            dest="log_output",
+            "-po",
+            "--print-output",
+            dest="print_output",
             action="store_true",
             help="Print the output to stdout",
         )
         parser.add_argument(
-            "-la",
-            "--log-all",
-            dest="log_all",
+            "-pa",
+            "--print-all",
+            dest="print_all",
             action="store_true",
             help="Print the output and commands to stdout",
         )
@@ -274,11 +274,11 @@ class IntegrationTestRunner:
 
     def setupEnvironment(self, args: Namespace) -> None:
         env = os.environ
-        if args.log_all:
-            args.log_commands = True
-            args.log_output = True
-        env[PYINT_LOG_COMMANDS] = str(int(args.log_commands))
-        env[PYINT_LOG_OUTPUT] = str(int(args.log_output))
+        if args.print_all:
+            args.print_commands = True
+            args.print_output = True
+        env[PYINT_PRINT_COMMANDS] = str(int(args.print_commands))
+        env[PYINT_PRINT_OUTPUT] = str(int(args.print_output))
         env[PYINT_CAPTURE] = args.capture_scheme
         if args.job_id:
             env[PYINT_JOB_ID] = args.job_id

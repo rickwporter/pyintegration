@@ -3,8 +3,8 @@
 from .constants import PYINT_CAPTURE
 from .constants import PYINT_JOB_ID
 from .constants import PYINT_KNOWN_ISSUES
-from .constants import PYINT_LOG_COMMANDS
-from .constants import PYINT_LOG_OUTPUT
+from .constants import PYINT_PRINT_COMMANDS
+from .constants import PYINT_PRINT_OUTPUT
 
 from .integration_testcase import IntegrationTestCase
 from .integration_testcase import skip_known_issue
