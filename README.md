@@ -23,8 +23,8 @@ The Setup/Cleanup functions are part of most test frameworks. These parts of the
 
 ### Report Generation
 
-Running the tests 
+Running the tests will be done by extending the `IntegrationTestRunner`.
 
 ### Data Capture
 
-
+The framework has different data capture options built in, such that it is easy to add your data to the mix. By default, the data is captured on failure making it easy to debug issues (without the ardurous process of trying to reproduce the errors).
