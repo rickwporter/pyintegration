@@ -6,7 +6,10 @@ from datetime import datetime
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Type
 
+from .background_process import BackgroundProcess
+from .container import Container
 from .constants import PYINT_CAPTURE
 from .constants import PYINT_JOB_ID
 from .constants import PYINT_KNOWN_ISSUES
@@ -40,7 +43,9 @@ class IntegrationTestCase(unittest.TestCase):
         self.job_id: Optional[int] = os.environ.get(PYINT_JOB_ID)
         self._capture_data: List[str] = None
         self.capture_separator: str = "**************************"
-        self._filenames = None
+        self._filenames: List[str] = None
+        self._containers: List[Container] = None
+        self._processes: List[BackgroundProcess] = None
         super().__init__(*args, **kwargs)
         self.maxDiff = None
 
@@ -48,6 +53,8 @@ class IntegrationTestCase(unittest.TestCase):
         # collects logs to display when/if the test case fails
         self._capture_data = list()
         self._filenames = set()
+        self._containers = list()
+        self._processes = list()
         super().setUp()
 
     def tearDown(self) -> None:
@@ -62,6 +69,12 @@ class IntegrationTestCase(unittest.TestCase):
         # remove any added files
         for fname in self._filenames:
             os.remove(fname)
+
+        for c in self._containers.reverse():
+            c.terminate()
+
+        for p in self._processes.reverse():
+            p.terminate()
 
         super().tearDown()
 
@@ -101,6 +114,27 @@ class IntegrationTestCase(unittest.TestCase):
     def deleteFile(self, filename):
         self._filenames.remove(filename)
         os.remove(filename)
+
+    def addContainer(self, container: Container) -> None:
+        self._containers.append(container)
+
+    def getContainer(self, partial_name: str) -> Optional[Container]:
+        for c in self._containers:
+            if partial_name in c.name:
+                return c
+        return None
+
+    def getContainerClass(self, type: Type) -> List[Container]:
+        return [_ for _ in self._containers if isinstance(_, type)]
+
+    def addProcess(self, process: BackgroundProcess) -> None:
+        self._processes.append(process)
+
+    def getProcess(self, partial_name: str) -> Optional[BackgroundProcess]:
+        for p in self._processes:
+            if partial_name in p.name:
+                return p
+        return None
 
     def fullName(self, name: str) -> str:
         """
