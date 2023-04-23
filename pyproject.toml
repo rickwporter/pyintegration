@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyintegration"
-version = "0.0.1"
+version = "0.0.2"
 authors = [
   { name="Rick W. Porter", email="rickwporter@gmail.com" },
 ]

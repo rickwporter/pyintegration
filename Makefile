@@ -5,7 +5,7 @@
 .PHONY += help
 
 python_cmd ?= python3
-python_install_cmd ?= $(python_cmd) -m pip install -q --user --upgrade
+python_install_cmd ?= $(python_cmd) -m pip install --user --upgrade
 
 #################
 # Targets
@@ -16,7 +16,7 @@ lint: ## Check code formatting
 	$(python_cmd) -m flake8
 
 install: ## Install the pyintegration package
-	$(python_install_cmd) .
+	$(python_install_cmd) -e .
 
 build: ## Builds the package for installation
 	$(python_cmd) -m build
