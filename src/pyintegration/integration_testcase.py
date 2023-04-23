@@ -16,6 +16,7 @@ from .container import Container
 from .container import waitForReady
 from .constants import DEFAULT_CONTAINER_READY_TIMEOUT
 from .constants import DEFAULT_CONTAINER_POLL_MAX
+from .constants import DEFAULT_REQUEST_TIMEOUT
 from .constants import PYINT_CAPTURE
 from .constants import PYINT_JOB_ID
 from .constants import PYINT_KNOWN_ISSUES
@@ -237,6 +238,7 @@ class IntegrationTestCase(unittest.TestCase):
         self,
         method: str,
         url: str,
+        timeout: float = DEFAULT_REQUEST_TIMEOUT,
         body: Optional[Any] = None,
         filter_func: Optional[Callable[[str], bool]] = None,
         filter_desc: Optional[str] = None,
@@ -247,7 +249,7 @@ class IntegrationTestCase(unittest.TestCase):
 
         start = datetime.now()
         try:
-            resp = requests.request(method, url, data=body)
+            resp = requests.request(method, url, data=body, timeout=timeout)
             delta = datetime.now() - start
             rv = 0 if resp.ok else resp.status_code
             stdout = [""] if not resp.text else resp.text.split('\n')

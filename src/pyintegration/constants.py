@@ -4,6 +4,9 @@ DEFAULT_CONTAINER_POLL_MAX = 2.0
 DEFAULT_CONTAINER_POLL_MIN = 0.25
 DEFAULT_CONTAINER_READY_TIMEOUT = 30.0
 
+# This is used as a 'curl' timeout -- it is short to avoid stalling tests while waiting for a response
+DEFAULT_REQUEST_TIMEOUT = 0.5
+
 # These are environment variable names used by the test framework
 PYINT_CAPTURE = "PYINT_TEST_CAPTURE"
 PYINT_JOB_ID = "PYINT_TEST_JOB_ID"

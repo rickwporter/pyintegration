@@ -6,6 +6,7 @@ from .constants import DEFAULT_CONTAINER_POLL_START
 from .constants import DEFAULT_CONTAINER_POLL_MAX
 from .constants import DEFAULT_CONTAINER_POLL_MIN
 from .constants import DEFAULT_CONTAINER_READY_TIMEOUT
+from .constants import DEFAULT_REQUEST_TIMEOUT
 from .constants import PYINT_CAPTURE
 from .constants import PYINT_JOB_ID
 from .constants import PYINT_KNOWN_ISSUES
