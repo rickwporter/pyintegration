@@ -1,3 +1,9 @@
+# These are related to the Container time values in the waitForReady() function
+DEFAULT_CONTAINER_POLL_START = 0.5
+DEFAULT_CONTAINER_POLL_MAX = 2.0
+DEFAULT_CONTAINER_POLL_MIN = 0.25
+DEFAULT_CONTAINER_READY_TIMEOUT = 30.0
+
 # These are environment variable names used by the test framework
 PYINT_CAPTURE = "PYINT_TEST_CAPTURE"
 PYINT_JOB_ID = "PYINT_TEST_JOB_ID"

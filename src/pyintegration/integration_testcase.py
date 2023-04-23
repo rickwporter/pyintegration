@@ -13,6 +13,9 @@ from typing import Type
 
 from .background_process import BackgroundProcess
 from .container import Container
+from .container import waitForReady
+from .constants import DEFAULT_CONTAINER_READY_TIMEOUT
+from .constants import DEFAULT_CONTAINER_POLL_MAX
 from .constants import PYINT_CAPTURE
 from .constants import PYINT_JOB_ID
 from .constants import PYINT_KNOWN_ISSUES
@@ -268,3 +271,23 @@ class IntegrationTestCase(unittest.TestCase):
             stdout=stdout,
             stderr=stderr
         )
+
+    def waitForReady(
+        self,
+        containers: List[Container],
+        max_wait_seconds: float = DEFAULT_CONTAINER_READY_TIMEOUT,
+        max_poll_seconds: float = DEFAULT_CONTAINER_POLL_MAX,
+        message: Optional[str] = None,
+    ) -> None:
+        unready = waitForReady(
+            containers, max_wait_seconds=max_wait_seconds, max_poll_seconds=max_poll_seconds, message=message
+        )
+        if unready:
+            if self.capture_scheme != "none":
+                self.writeCaptureData()
+            self.tearDown()
+            names = [_.name for _ in unready]
+            msg = message if message else f"{len(containers)} containers to be ready"
+            error_msg = f"Failed waiting for {msg} -- unready: {', '.join(names)}"
+            self.fail(error_msg)
+        return

@@ -6,9 +6,16 @@ import tempfile
 from abc import ABC
 from abc import abstractmethod
 from datetime import datetime
+from datetime import timedelta
+from time import sleep
 from typing import Dict
+from typing import List
 from typing import Optional
 
+from .constants import DEFAULT_CONTAINER_POLL_MAX
+from .constants import DEFAULT_CONTAINER_POLL_MIN
+from .constants import DEFAULT_CONTAINER_POLL_START
+from .constants import DEFAULT_CONTAINER_READY_TIMEOUT
 from .result import Result
 from .utils import bytesToString
 from .utils import envPrintOutput
@@ -338,3 +345,52 @@ def imageExists(image_name: str) -> bool:
             return True
 
     return False
+
+
+def waitForReady(
+    containers: List[Container],
+    max_wait_seconds: float = DEFAULT_CONTAINER_READY_TIMEOUT,
+    max_poll_seconds: float = DEFAULT_CONTAINER_POLL_MAX,
+    start_poll_seconds: float = DEFAULT_CONTAINER_POLL_START,
+    message: Optional[str] = None,
+    verbose: int = 0,
+) -> Optional[List[Container]]:
+    """
+    Waits for all the containers to be ready, or reaches the max_wait_seconds.
+    """
+    reason = message if message else f"{len(containers)} containers to be ready"
+
+    if verbose > 0:
+        print(f"Waiting for up to {max_wait_seconds} seconds for {reason}")
+
+    poll_seconds = max(start_poll_seconds, DEFAULT_CONTAINER_POLL_MIN)
+    starttime = currtime = datetime.now()
+    endtime = starttime + timedelta(seconds=max_wait_seconds)
+    unready = [_ for _ in containers]
+    while endtime >= currtime:
+        unready = [_ for _ in unready if not _.isReady()]
+        checktime = datetime.now() - currtime
+        if checktime.total_seconds() > 1.0 and verbose > 0:
+            print(f"Checking took {checktime.total_seconds()} seconds")
+
+        if not unready:
+            break
+
+        poll_seconds = min(poll_seconds, max_poll_seconds)
+        if verbose > 1:
+            print(f"Waiting {poll_seconds} seconds before checking on {len(unready)} containers")
+
+        sleep(poll_seconds)
+        poll_seconds *= 2
+        currtime = datetime.now()
+
+    deltatime = datetime.now() - starttime
+    if unready:
+        names = [_.name for _ in unready]
+        if verbose > 0:
+            print(f"Waited {deltatime.total_seconds()} for {reason} -- still had unready: {', '.join(names)}")
+        return unready
+
+    if verbose > 0 and deltatime.total_seconds() > max_wait_seconds / 2:
+        print(f"Took {deltatime.total_seconds()} of {max_wait_seconds} for {reason} -- consider increasing timeout")
+    return None
