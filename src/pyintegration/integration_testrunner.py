@@ -134,7 +134,7 @@ def filter_exclude(suite, exclude: str):
 
 class IntegrationTestRunner:
     def __init__(self, description: str = DEFAULT_DESCRIPTION):
-        self.description
+        self.description = description
 
     def parseArgs(self, *args) -> Namespace:
         """
@@ -172,6 +172,7 @@ class IntegrationTestRunner:
             action="store_true",
             help="Stop the test on first error",
         )
+        return parser
 
     def addOutputArgs(self, parser: ArgumentParser) -> ArgumentParser:
         parser.add_argument(
@@ -212,6 +213,13 @@ class IntegrationTestRunner:
             default="failure",
             help="When to capture output (default: %(default)s)"
 
+        )
+        parser.add_argument(
+            "-r",
+            "--reports",
+            dest="reports",
+            action="store_true",
+            help="Write reports"
         )
         return parser
 
@@ -316,7 +324,7 @@ class IntegrationTestRunner:
     def printSuite(self, suite) -> None:
         if hasattr(suite, "__iter__"):
             for x in suite:
-                suite.printSuite(x)
+                self.printSuite(x)
         elif hasattr(suite, "_testMethodName"):
             name = getattr(suite, "_testMethodName")
             print(f"{name}")
@@ -347,7 +355,7 @@ class IntegrationTestRunner:
 
         debug = args.debug or args.pdb
         failfast = args.debug or args.failfast
-        runner = debugTestRunner(enable_debug=debug, verosity=args.verbosity, failfast=failfast)
+        runner = debugTestRunner(enable_debug=debug, verbosity=args.verbosity, failfast=failfast)
         test_result = runner.run(suite)
 
         if args.reports:
