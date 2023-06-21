@@ -49,7 +49,7 @@ class Container(ABC):
         self.environment: Dict[str, str] = environment
 
         # initialize things that are not args
-        self.container: Optional[docker.Container] = None
+        self.container: Optional[docker.models.containers.Container] = None
         self.last_log_size: int = 0
 
     def __repr__(self) -> str:
@@ -109,7 +109,7 @@ class Container(ABC):
             return None
         return self.container.short_id
 
-    def _findByName(self, name: str) -> Optional[docker.Container]:
+    def _findByName(self, name: str) -> Optional[docker.models.containers.Container]:
         dockerClient = docker.from_env()
         containers = dockerClient.containers.list()
         for c in containers:
