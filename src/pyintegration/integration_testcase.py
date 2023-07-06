@@ -77,10 +77,12 @@ class IntegrationTestCase(unittest.TestCase):
         for fname in self._filenames:
             os.remove(fname)
 
-        for c in self._containers.reverse():
+        self._containers.reverse()
+        for c in self._containers:
             c.terminate()
 
-        for p in self._processes.reverse():
+        self._processes.reverse()
+        for p in self._processes:
             p.terminate()
 
         super().tearDown()

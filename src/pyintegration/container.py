@@ -71,7 +71,7 @@ class Container(ABC):
             raise FileNotFoundError(f"{self.__class__.__name__} image {self.image_name} does not exist")
 
         dockerClient = docker.from_env()
-        self.container = dockerClient.run(
+        self.container = dockerClient.containers.run(
             name=self.name,
             image=self.image_name,
             remove=True,  # remove teh container when done running
@@ -80,7 +80,7 @@ class Container(ABC):
         )
 
         # NOTE: refresh() to get the ports (when using ephemeral ports)
-        self.refesh()
+        self.refresh()
 
         if self.print_commands:
             info = self.info()
