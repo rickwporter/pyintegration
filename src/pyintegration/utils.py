@@ -43,10 +43,12 @@ def getLocalIp() -> str:
     hostname = socket.getfqdn()
     try:
         return socket.gethostbyname_ex(hostname)[2][0]
-    except socket.gaierror as ex:
-        # reraise the error in this case
+    except socket.gaierror:
         if "." in hostname:
-            raise ex
+            hostname = socket.gethostname()
+        else:
+            # this is a trick for Mac
+            hostname = hostname + '.local'
 
-        # on Mac, we canget here when not hooked into DNS
-        return socket.gethostbyname_ex(hostname + ".local")[2][0]
+        # try again with the hostname (not FQDN)
+        return socket.gethostbyname_ex(hostname)[2][0]
