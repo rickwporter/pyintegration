@@ -1,13 +1,2 @@
 
 TEST_PETSTORE_IMAGE = 'TEST_PETSTORE_IMAGE'
-
-HDR_ACCEPT = 'accept'
-HDR_CONTENT = "Content-Type"
-
-ACCEPT_ANY = '*/*'
-APP_JSON = 'application/json'
-
-DEFAULT_HDRS = {
-    HDR_ACCEPT: APP_JSON,
-    HDR_CONTENT: APP_JSON,
-}

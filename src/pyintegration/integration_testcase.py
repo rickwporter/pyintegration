@@ -1,4 +1,5 @@
 import os
+import json
 import requests
 import subprocess
 import unittest
@@ -16,6 +17,7 @@ from .container import Container
 from .container import waitForReady
 from .constants import DEFAULT_CONTAINER_READY_TIMEOUT
 from .constants import DEFAULT_CONTAINER_POLL_MAX
+from .constants import DEFAULT_HDRS
 from .constants import DEFAULT_REQUEST_TIMEOUT
 from .constants import PYINT_CAPTURE
 from .constants import PYINT_JOB_ID
@@ -295,3 +297,45 @@ class IntegrationTestCase(unittest.TestCase):
             error_msg = f"Failed waiting for {msg} -- unready: {', '.join(names)}"
             self.fail(error_msg)
         return
+
+    def request(
+            self,
+            url: str,
+            method: str = "GET",
+            headers=DEFAULT_HDRS,
+            data: Any = None,
+            indent: int = 2,
+            **kwargs,
+    ) -> requests.Response:
+        """
+        Wrapper around standard 'request.request' to provide logging and command output.
+        """
+        hdr_strs = {f'-H "{k}: {v}"' for k, v in headers.items()}
+        command = f"curl -X {method} {url} {' '.join(hdr_strs)}"
+
+        if self.print_commands:
+            print(command)
+
+        start = datetime.now()
+        resp = requests.request(method=method, url=url, headers=headers, data=json.dumps(data), **kwargs)
+        delta = datetime.now() - start
+
+        output = [
+            f"{resp.status_code} {resp.reason}",
+        ]
+        if resp.content:
+            output.extend(json.dumps(resp.json(), indent=indent).split('\n'))
+        output.append("")  # add blank line
+
+        result = Result(
+            return_value=resp.status_code,
+            command=command,
+            timediff=delta,
+            stdout=output,
+        )
+        self.logResult(result)
+
+        if self.print_output:
+            print('\n'.join(output))
+
+        return resp
