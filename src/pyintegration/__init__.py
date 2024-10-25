@@ -17,6 +17,10 @@ from .container import Container
 from .container import lastBuilt
 from .container import imageExists
 
+from .flask_server import FlaskApp
+from .flask_server import FlaskThread
+from .flask_server import start_server
+
 from .integration_testcase import IntegrationTestCase
 from .integration_testcase import skip_known_issue
 
