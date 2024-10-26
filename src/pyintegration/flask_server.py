@@ -77,8 +77,8 @@ class FlaskApp(Flask):
         response = Response(
             status=method_data.get("status", 200),
             response=json.dumps(method_data.get("body", None)),
-            content_type=method_data.get("content_type", "application/json"),
-            headers=method_data.get("headers", None),
+            content_type=method_data.get("content_type"),
+            headers=method_data.get("headers"),
         )
         filename = method_data.get("filename")
         if filename:

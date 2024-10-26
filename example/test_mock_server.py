@@ -20,7 +20,10 @@ HEADERS = "headers"
 STATUS = ""
 
 NO_DATA = {}
-ONE_URL = {SIMPLE_URL: {GET: {BODY: {"foo": "bar"}}}}
+SIMPLE_JSON_DATA = {SIMPLE_URL: {GET: {BODY: {"foo": "bar"}}}}
+SIMPLE_TEXT_DATA = {
+    SIMPLE_URL: {GET: {BODY: "random string", HEADERS: {"content_type": "text/plain"}}}
+}
 
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
@@ -62,9 +65,18 @@ class TestMockServer(IntegrationTestCase):
         resp = self.request(base_url + "/some_url")
         self.assertEqual(404, resp.status_code)
 
-    def test_mock_simple(self):
-        self.set_response_data(ONE_URL)
+    def test_mock_simple_json(self):
+        self.set_response_data(SIMPLE_JSON_DATA)
         base_url = self.address
         resp = self.request(f"{base_url}/{SIMPLE_URL}")
         self.assertEqual(200, resp.status_code)
         self.assertEqual({"foo": "bar"}, resp.json())
+        self.assertEqual(resp.headers.get("content_type"), None)
+
+    def test_mock_simple_text(self):
+        self.set_response_data(SIMPLE_TEXT_DATA)
+        base_url = self.address
+        resp = self.request(f"{base_url}/{SIMPLE_URL}")
+        self.assertEqual(200, resp.status_code)
+        self.assertEqual('"random string"', resp.text)
+        self.assertEqual(resp.headers.get("content_type"), "text/plain")
