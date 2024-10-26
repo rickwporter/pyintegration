@@ -19,6 +19,7 @@ from .container import imageExists
 
 from .flask_server import FlaskApp
 from .flask_server import FlaskThread
+from .flask_server import set_server_log_level
 from .flask_server import start_server
 
 from .integration_testcase import IntegrationTestCase
