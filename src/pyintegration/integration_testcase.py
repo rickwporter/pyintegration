@@ -305,6 +305,7 @@ class IntegrationTestCase(unittest.TestCase):
             headers=DEFAULT_HDRS,
             data: Any = None,
             indent: int = 2,
+            print_body: bool = True,
             **kwargs,
     ) -> requests.Response:
         """
@@ -323,8 +324,11 @@ class IntegrationTestCase(unittest.TestCase):
         output = [
             f"{resp.status_code} {resp.reason}",
         ]
-        if resp.content:
-            output.extend(json.dumps(resp.json(), indent=indent).split('\n'))
+        if resp.content and print_body:
+            try:
+                output.extend(json.dumps(resp.json(), indent=indent).split('\n'))
+            except requests.exceptions.JSONDecodeError:
+                output.extend(resp.text)
         output.append("")  # add blank line
 
         result = Result(

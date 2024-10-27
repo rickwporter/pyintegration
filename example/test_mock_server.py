@@ -7,23 +7,21 @@ from typing import Dict
 from typing import Optional
 
 from pyintegration import IntegrationTestCase
+from pyintegration import ResponseInfo
+from pyintegration import ServerResponses
 from pyintegration import set_server_log_level
 from pyintegration import start_server
 
 GET = "GET"
 POST = "POST"
 
+CONTENT_TYPE = "Content-Type"
+
 SIMPLE_URL = "sna/foo"
 
 BODY = "body"
 HEADERS = "headers"
 STATUS = ""
-
-NO_DATA = {}
-SIMPLE_JSON_DATA = {SIMPLE_URL: {GET: {BODY: {"foo": "bar"}}}}
-SIMPLE_TEXT_DATA = {
-    SIMPLE_URL: {GET: {BODY: "random string", HEADERS: {"content_type": "text/plain"}}}
-}
 
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
@@ -61,22 +59,32 @@ class TestMockServer(IntegrationTestCase):
 
     def test_mock_no_data(self):
         base_url = self.address
-        self.set_response_data(NO_DATA)
         resp = self.request(base_url + "/some_url")
         self.assertEqual(404, resp.status_code)
 
     def test_mock_simple_json(self):
-        self.set_response_data(SIMPLE_JSON_DATA)
+        responses = ServerResponses()
+        responses.add_response(
+            SIMPLE_URL, GET, ResponseInfo(body={"foo": "bar"}, content_type=None)
+        )
+        self.set_response_data(responses.for_server())
         base_url = self.address
         resp = self.request(f"{base_url}/{SIMPLE_URL}")
         self.assertEqual(200, resp.status_code)
         self.assertEqual({"foo": "bar"}, resp.json())
-        self.assertEqual(resp.headers.get("content_type"), None)
+        # without specifying a type, this gets assigned by Flask
+        self.assertEqual(resp.headers.get(CONTENT_TYPE), "text/html; charset=utf-8")
 
     def test_mock_simple_text(self):
-        self.set_response_data(SIMPLE_TEXT_DATA)
+        responses = ServerResponses()
+        responses.add_response(
+            SIMPLE_URL,
+            GET,
+            ResponseInfo(body="random string", content_type="text/plain"),
+        )
+        self.set_response_data(responses.for_server())
         base_url = self.address
         resp = self.request(f"{base_url}/{SIMPLE_URL}")
         self.assertEqual(200, resp.status_code)
         self.assertEqual('"random string"', resp.text)
-        self.assertEqual(resp.headers.get("content_type"), "text/plain")
+        self.assertEqual(resp.headers.get(CONTENT_TYPE), "text/plain")

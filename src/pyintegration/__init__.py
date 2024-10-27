@@ -29,5 +29,9 @@ from .integration_testrunner import IntegrationTestRunner
 
 from .result import Result
 
+from .response_info import ResponseInfo
+
+from .server_responses import ServerResponses
+
 from .utils import bytesToString
 from .utils import getLocalIp
