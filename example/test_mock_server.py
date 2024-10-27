@@ -14,6 +14,10 @@ from pyintegration import start_server
 
 GET = "GET"
 POST = "POST"
+DELETE = "DELETE"
+PATCH = "PATCH"
+PUT = "PUT"
+TRACE = "TRACE"
 
 CONTENT_TYPE = "Content-Type"
 
@@ -32,6 +36,7 @@ class TestMockServer(IntegrationTestCase):
         set_server_log_level("WARNING")
         self.server = start_server()
         self.address = self.server.get_base_url()
+        self.responses = ServerResponses()
 
     def tearDown(self):
         self.record_server_stats()
@@ -51,6 +56,12 @@ class TestMockServer(IntegrationTestCase):
                 stats, fp, indent=2
             )  # use indent so get one per line for easier comparison
 
+    def add_response(self, url: str, method: str, data: ResponseInfo) -> None:
+        self.responses.add_response(url, method, data)
+
+    def set_server_responses(self) -> None:
+        self.set_response_data(self.responses.for_server())
+
     def set_server_logging(self, level: str):
         self.set_server_logging(level)
 
@@ -63,11 +74,10 @@ class TestMockServer(IntegrationTestCase):
         self.assertEqual(404, resp.status_code)
 
     def test_mock_simple_json(self):
-        responses = ServerResponses()
-        responses.add_response(
+        self.add_response(
             SIMPLE_URL, GET, ResponseInfo(body={"foo": "bar"}, content_type=None)
         )
-        self.set_response_data(responses.for_server())
+        self.set_server_responses()
         base_url = self.address
         resp = self.request(f"{base_url}/{SIMPLE_URL}")
         self.assertEqual(200, resp.status_code)
@@ -76,15 +86,51 @@ class TestMockServer(IntegrationTestCase):
         self.assertEqual(resp.headers.get(CONTENT_TYPE), "text/html; charset=utf-8")
 
     def test_mock_simple_text(self):
-        responses = ServerResponses()
-        responses.add_response(
+        self.add_response(
             SIMPLE_URL,
             GET,
             ResponseInfo(body="random string", content_type="text/plain"),
         )
-        self.set_response_data(responses.for_server())
+        self.set_server_responses()
         base_url = self.address
         resp = self.request(f"{base_url}/{SIMPLE_URL}")
         self.assertEqual(200, resp.status_code)
         self.assertEqual('"random string"', resp.text)
         self.assertEqual(resp.headers.get(CONTENT_TYPE), "text/plain")
+
+    def test_mock_headers(self):
+        self.add_response(
+            SIMPLE_URL, GET, ResponseInfo(headers={"sna": "foo", "foo": "bar"})
+        )
+        self.set_server_responses()
+        base_url = self.address
+        resp = self.request(f"{base_url}/{SIMPLE_URL}")
+        self.assertEqual(200, resp.status_code)
+        self.assertEqual(resp.headers.get("Content-Type"), "application/json")
+        self.assertEqual(resp.headers.get("sna"), "foo")
+        self.assertEqual(resp.headers.get("foo"), "bar")
+
+    def test_mock_status(self):
+        base_url = self.address
+        url = f"{base_url}/{SIMPLE_URL}"
+        for status_code in (200, 202, 204, 303, 401, 503):
+            self.add_response(SIMPLE_URL, GET, ResponseInfo(status=status_code))
+            self.set_server_responses()
+            resp = self.request(url)
+            self.assertEqual(status_code, resp.status_code)
+
+    def test_mock_method_and_stats(self):
+        base_url = self.address
+        url = f"{base_url}/{SIMPLE_URL}"
+        METHODS = (GET, POST, DELETE, PUT, PATCH, TRACE)
+        for method in METHODS:
+            self.add_response(SIMPLE_URL, method, ResponseInfo())
+            self.set_server_responses()
+            stat_key = f"{method} {SIMPLE_URL}"
+            self.assertIsNone(self.server.get_statistics().get(stat_key))
+            resp = self.request(url, method=method)
+            self.assertEqual(200, resp.status_code)
+            self.assertEqual(1, self.server.get_statistics().get(stat_key))
+
+        expected_stats = {f"{m} {SIMPLE_URL}": 1 for m in METHODS}
+        self.assertEqual(expected_stats, self.server.get_statistics())
