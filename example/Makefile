@@ -8,6 +8,9 @@ default: help
 lint: ## Check code formatting
 	$(python_cmd) -m flake8
 
+delint: ## Fix formatting
+	black .
+
 clean: ## Remove build/run artifacts
 	rm -rf *.log
 

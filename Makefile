@@ -17,6 +17,9 @@ default: install
 lint: ## Check code formatting
 	$(python_cmd) -m flake8
 
+delint: ## Attempt to fix formatting issues
+	black .
+
 install: ## Install the pyintegration package
 	$(python_install_cmd) -e .
 

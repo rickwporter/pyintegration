@@ -16,11 +16,7 @@ class PetstoreTestRunner(IntegrationTestRunner):
 
     def addUserArgs(self, parser: ArgumentParser) -> ArgumentParser:
         parser.add_argument(
-            "-i",
-            "--image",
-            dest="image_name",
-            type=str,
-            help="PetStore image name"
+            "-i", "--image", dest="image_name", type=str, help="PetStore image name"
         )
         return parser
 

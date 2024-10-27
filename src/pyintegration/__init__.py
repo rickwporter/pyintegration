@@ -1,4 +1,3 @@
-
 # Not quite sure why we'd need to include these, but doing it for completeness
 from .background_process import BackgroundProcess
 

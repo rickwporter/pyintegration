@@ -22,7 +22,7 @@ from .utils import envPrintOutput
 from .utils import envPrintCommands
 from .utils import getLocalIp
 
-ANY_HOST = '0.0.0.0'
+ANY_HOST = "0.0.0.0"
 
 
 class Container(ABC):
@@ -53,7 +53,9 @@ class Container(ABC):
         self.last_log_size: int = 0
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.name}, container={self.containerName()})"
+        return (
+            f"{self.__class__.__name__}({self.name}, container={self.containerName()})"
+        )
 
     @abstractmethod
     def info(self) -> str:
@@ -68,7 +70,9 @@ class Container(ABC):
             return
 
         if not imageExists(self.image_name):
-            raise FileNotFoundError(f"{self.__class__.__name__} image {self.image_name} does not exist")
+            raise FileNotFoundError(
+                f"{self.__class__.__name__} image {self.image_name} does not exist"
+            )
 
         dockerClient = docker.from_env()
         self.container = dockerClient.containers.run(
@@ -76,7 +80,7 @@ class Container(ABC):
             image=self.image_name,
             remove=True,  # remove teh container when done running
             detach=True,  # run in background
-            **self.startArgs()
+            **self.startArgs(),
         )
 
         # NOTE: refresh() to get the ports (when using ephemeral ports)
@@ -84,23 +88,25 @@ class Container(ABC):
 
         if self.print_commands:
             info = self.info()
-            extra = ' - ' + info if info else ''
+            extra = " - " + info if info else ""
             print(f"Started '{self.name}' ({self.image_name}{extra})")
 
         return
 
     def startArgs(self) -> Dict:
         args = {
-            'auto_remove': self.auto_removal,
+            "auto_remove": self.auto_removal,
         }
         if self.userid is not None:
-            args['user'] = str(self.userid)
+            args["user"] = str(self.userid)
         if self.volumes:
-            args['volumes'] = self.volumes
+            args["volumes"] = self.volumes
         if self.portmap:
-            args['ports'] = {str(k): str(v) for k, v in self.portmap.items() if v is not None}
+            args["ports"] = {
+                str(k): str(v) for k, v in self.portmap.items() if v is not None
+            }
         if self.environment:
-            args['environment'] = self.environment
+            args["environment"] = self.environment
 
         return args
 
@@ -185,11 +191,7 @@ class Container(ABC):
             print(output)
 
         return Result(
-            return_value=0,
-            command=cmd,
-            timediff=delta,
-            stdout=[output, ""],
-            stderr=[]
+            return_value=0, command=cmd, timediff=delta, stdout=[output, ""], stderr=[]
         )
 
     def logSnapshotDiff(self) -> Result:
@@ -211,8 +213,8 @@ class Container(ABC):
             return_value=0,
             command=cmd,
             timediff=delta,
-            stdout=logs.split('\n'),
-            stderr=[]
+            stdout=logs.split("\n"),
+            stderr=[],
         )
 
     def isReady(self) -> bool:
@@ -240,7 +242,9 @@ class Container(ABC):
         Runs the specifed cmd in the container and returns the `Result`.
         """
         if not self.container:
-            raise RuntimeError(f"Container '{self.name}' is not started: cannot run '{cmd}'")
+            raise RuntimeError(
+                f"Container '{self.name}' is not started: cannot run '{cmd}'"
+            )
 
         command = f"{self.name} exec: {cmd}"
         if self.print_commands:
@@ -258,7 +262,7 @@ class Container(ABC):
             return_value=exec_result.exit_code,
             command=command,
             timediff=delta,
-            stdout=output.split('\n'),
+            stdout=output.split("\n"),
             stderr=[],
         )
 
@@ -279,31 +283,33 @@ class Container(ABC):
                 continue
 
             for v in values:
-                ipaddr = v.get('HostIp', ANY_HOST)
+                ipaddr = v.get("HostIp", ANY_HOST)
                 if ipaddr == ANY_HOST:
                     ipaddr = getLocalIp()
                 return f"{ipaddr}:{v.get('HostPort')}"
 
-    def setMount(self, hostPath: str, containerPath: Optional[str] = None, mode: str = 'rw'):
+    def setMount(
+        self, hostPath: str, containerPath: Optional[str] = None, mode: str = "rw"
+    ):
         if self.container:
             raise RuntimeError(f"Cannot set {self.name} mounts after running")
 
         if not containerPath:
             self.volumes.pop(hostPath, None)
         else:
-            self.volumes.upate({hostPath: {'bind': containerPath, 'mode': mode}})
+            self.volumes.upate({hostPath: {"bind": containerPath, "mode": mode}})
         return
 
     def copyDir(self, hostDir: str, containerDir: str) -> None:
         if not self.container:
             raise RuntimeError(f"Cannot copy to '{self.name}' until it is running")
 
-        tarname = tempfile.mktemp(prefix=self.name + '-', suffix='.tar')
-        tf = tarfile.open(tarname, mode='w')
-        tf.add(hostDir, arcname='')  # empty 'arcname' drops the path from the name
+        tarname = tempfile.mktemp(prefix=self.name + "-", suffix=".tar")
+        tf = tarfile.open(tarname, mode="w")
+        tf.add(hostDir, arcname="")  # empty 'arcname' drops the path from the name
         tf.close()
 
-        df = open(tarname, 'rb')
+        df = open(tarname, "rb")
         self.container.put_archive(containerDir, df)
         df.close()
         os.unlink(tarname)
@@ -320,12 +326,12 @@ def lastBuilt(base_image: str) -> str:
     dockerClient = docker.from_env()
     images = dockerClient.images.list()
     for img in images:
-        tags = img.attrs.get('RepoTags', [])
+        tags = img.attrs.get("RepoTags", [])
         matches = [_ for _ in tags if base_image in _]
         if not matches:
             continue
 
-        build_time = img.attrs.get('Created')
+        build_time = img.attrs.get("Created")
         if not found_time or build_time > found_time:
             found_time = build_time
             found_image = matches[0]
@@ -340,7 +346,7 @@ def imageExists(image_name: str) -> bool:
     dockerClient = docker.from_env()
     images = dockerClient.images.list()
     for img in images:
-        tags = img.attrs.get('RepoTags', [])
+        tags = img.attrs.get("RepoTags", [])
         if any([_ for _ in tags if image_name == _]):
             return True
 
@@ -378,7 +384,9 @@ def waitForReady(
 
         poll_seconds = min(poll_seconds, max_poll_seconds)
         if verbose > 1:
-            print(f"Waiting {poll_seconds} seconds before checking on {len(unready)} containers")
+            print(
+                f"Waiting {poll_seconds} seconds before checking on {len(unready)} containers"
+            )
 
         sleep(poll_seconds)
         poll_seconds *= 2
@@ -388,9 +396,13 @@ def waitForReady(
     if unready:
         names = [_.name for _ in unready]
         if verbose > 0:
-            print(f"Waited {deltatime.total_seconds()} for {reason} -- still had unready: {', '.join(names)}")
+            print(
+                f"Waited {deltatime.total_seconds()} for {reason} -- still had unready: {', '.join(names)}"
+            )
         return unready
 
     if verbose > 0 and deltatime.total_seconds() > max_wait_seconds / 2:
-        print(f"Took {deltatime.total_seconds()} of {max_wait_seconds} for {reason} -- consider increasing timeout")
+        print(
+            f"Took {deltatime.total_seconds()} of {max_wait_seconds} for {reason} -- consider increasing timeout"
+        )
     return None

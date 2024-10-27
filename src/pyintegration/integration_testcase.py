@@ -37,7 +37,9 @@ def missing_any(env_var_names: List[str]) -> bool:
 
 # decorator to mark a test as a known issue
 def skip_known_issue(msg: str):
-    return unittest.skipUnless(os.environ.get(PYINT_KNOWN_ISSUES), f"Known issue: {msg}")
+    return unittest.skipUnless(
+        os.environ.get(PYINT_KNOWN_ISSUES), f"Known issue: {msg}"
+    )
 
 
 class IntegrationTestCase(unittest.TestCase):
@@ -96,7 +98,7 @@ class IntegrationTestCase(unittest.TestCase):
         filename = f"{self._testMethodName}_commands{'_' + self.job_id if self.job_id else ''}.log"
         try:
             file = open(filename, "w")
-            file.write('\n'.join(self._capture_data))
+            file.write("\n".join(self._capture_data))
             file.close()
         except Exception as ex:
             print(f"Failed to write captured data to '{filename}': {ex}")
@@ -218,12 +220,18 @@ class IntegrationTestCase(unittest.TestCase):
             print(cmd)
 
         start = datetime.now()
-        process = subprocess.run(cmd, env=env, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = subprocess.run(
+            cmd, env=env, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
         delta = datetime.now() - start
         result = Result(
             return_value=process.returncode,
-            stdout=process.stdout.decode("us-ascii", errors="ignore").replace("\r", "").split("\n"),
-            stderr=process.stderr.decode("us-ascii", errors="ignore").replace("\r", "").split("\n"),
+            stdout=process.stdout.decode("us-ascii", errors="ignore")
+            .replace("\r", "")
+            .split("\n"),
+            stderr=process.stderr.decode("us-ascii", errors="ignore")
+            .replace("\r", "")
+            .split("\n"),
             timediff=delta,
             command=cmd,
         )
@@ -256,26 +264,26 @@ class IntegrationTestCase(unittest.TestCase):
             resp = requests.request(method, url, data=body, timeout=timeout)
             delta = datetime.now() - start
             rv = 0 if resp.ok else resp.status_code
-            stdout = [""] if not resp.text else resp.text.split('\n')
+            stdout = [""] if not resp.text else resp.text.split("\n")
             stderr = []
         except Exception as ex:
             delta = datetime.now() - start
             rv = -1
             stdout = []
-            stderr = str(ex).split('\n')
+            stderr = str(ex).split("\n")
 
         if filter_func and stdout:
             stdout = [_ for _ in stdout if filter_func(_)]
 
         if self.print_output:
-            print('\n'.join(stdout))
+            print("\n".join(stdout))
 
         return Result(
             command=command,
             return_value=rv,
             timediff=delta,
             stdout=stdout,
-            stderr=stderr
+            stderr=stderr,
         )
 
     def waitForReady(
@@ -286,7 +294,10 @@ class IntegrationTestCase(unittest.TestCase):
         message: Optional[str] = None,
     ) -> None:
         unready = waitForReady(
-            containers, max_wait_seconds=max_wait_seconds, max_poll_seconds=max_poll_seconds, message=message
+            containers,
+            max_wait_seconds=max_wait_seconds,
+            max_poll_seconds=max_poll_seconds,
+            message=message,
         )
         if unready:
             if self.capture_scheme != "none":
@@ -299,14 +310,14 @@ class IntegrationTestCase(unittest.TestCase):
         return
 
     def request(
-            self,
-            url: str,
-            method: str = "GET",
-            headers=DEFAULT_HDRS,
-            data: Any = None,
-            indent: int = 2,
-            print_body: bool = True,
-            **kwargs,
+        self,
+        url: str,
+        method: str = "GET",
+        headers=DEFAULT_HDRS,
+        data: Any = None,
+        indent: int = 2,
+        print_body: bool = True,
+        **kwargs,
     ) -> requests.Response:
         """
         Wrapper around standard 'request.request' to provide logging and command output.
@@ -318,7 +329,9 @@ class IntegrationTestCase(unittest.TestCase):
             print(command)
 
         start = datetime.now()
-        resp = requests.request(method=method, url=url, headers=headers, data=json.dumps(data), **kwargs)
+        resp = requests.request(
+            method=method, url=url, headers=headers, data=json.dumps(data), **kwargs
+        )
         delta = datetime.now() - start
 
         output = [
@@ -326,7 +339,7 @@ class IntegrationTestCase(unittest.TestCase):
         ]
         if resp.content and print_body:
             try:
-                output.extend(json.dumps(resp.json(), indent=indent).split('\n'))
+                output.extend(json.dumps(resp.json(), indent=indent).split("\n"))
             except requests.exceptions.JSONDecodeError:
                 output.extend(resp.text)
         output.append("")  # add blank line
@@ -340,6 +353,6 @@ class IntegrationTestCase(unittest.TestCase):
         self.logResult(result)
 
         if self.print_output:
-            print('\n'.join(output))
+            print("\n".join(output))
 
         return resp

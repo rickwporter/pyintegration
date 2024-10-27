@@ -15,11 +15,11 @@ PYINT_PRINT_COMMANDS = "PYINT_TEST_LOG_COMMANDS"
 PYINT_PRINT_OUTPUT = "PYINT_TEST_LOG_OUTPUT"
 
 # These are for request processing -- some standard headers for REST requests
-HDR_ACCEPT = 'accept'
+HDR_ACCEPT = "accept"
 HDR_CONTENT = "Content-Type"
 
-ACCEPT_ANY = '*/*'
-APP_JSON = 'application/json'
+ACCEPT_ANY = "*/*"
+APP_JSON = "application/json"
 
 DEFAULT_HDRS = {
     HDR_ACCEPT: APP_JSON,

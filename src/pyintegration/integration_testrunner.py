@@ -43,7 +43,9 @@ def debugTestRunner(enable_debug: bool, verbosity: int, failfast: bool):
 
     class DebugTestResult(unittest.TextTestResult):
         def __init__(self, stream, descriptions, verbosity):
-            super().__init__(stream=stream, descriptions=descriptions, verbosity=verbosity)
+            super().__init__(
+                stream=stream, descriptions=descriptions, verbosity=verbosity
+            )
             self.testCaseData = {}
 
         def addError(self, test: unittest.case.TestCase, err) -> None:
@@ -84,7 +86,9 @@ def debugTestRunner(enable_debug: bool, verbosity: int, failfast: bool):
             _, line = inspect.getsourcelines(getattr(test, name))
             filename = fullpath.replace(topdir, "")
             classname = test.__module__ + "." + test.__class__.__name__
-            data = TestCaseResults(name, classname, filename, line, starttime=datetime.now())
+            data = TestCaseResults(
+                name, classname, filename, line, starttime=datetime.now()
+            )
             self.testCaseData[name] = data
 
         def stopTest(self, test: unittest.case.TestCase) -> None:
@@ -93,7 +97,10 @@ def debugTestRunner(enable_debug: bool, verbosity: int, failfast: bool):
             self.testCaseData[name].endtime = datetime.now()
 
     return unittest.TextTestRunner(
-        verbosity=verbosity, failfast=failfast, resultclass=DebugTestResult, stream=sys.stdout
+        verbosity=verbosity,
+        failfast=failfast,
+        resultclass=DebugTestResult,
+        stream=sys.stdout,
     )
 
 
@@ -211,15 +218,10 @@ class IntegrationTestRunner:
             metavar="OPTION",
             choices=["all", "success", "failure"],
             default="failure",
-            help="When to capture output (default: %(default)s)"
-
+            help="When to capture output (default: %(default)s)",
         )
         parser.add_argument(
-            "-r",
-            "--reports",
-            dest="reports",
-            action="store_true",
-            help="Write reports"
+            "-r", "--reports", dest="reports", action="store_true", help="Write reports"
         )
         return parser
 
@@ -355,7 +357,9 @@ class IntegrationTestRunner:
 
         debug = args.debug or args.pdb
         failfast = args.debug or args.failfast
-        runner = debugTestRunner(enable_debug=debug, verbosity=args.verbosity, failfast=failfast)
+        runner = debugTestRunner(
+            enable_debug=debug, verbosity=args.verbosity, failfast=failfast
+        )
         test_result = runner.run(suite)
 
         if args.reports:

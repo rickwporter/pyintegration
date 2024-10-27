@@ -19,5 +19,3 @@ class TestCaseResults:
     message: Optional[str] = None
     starttime: Optional[datetime] = None
     endtime: Optional[datetime] = None
-
-

@@ -7,7 +7,7 @@ from pyintegration import lastBuilt
 
 from constants import TEST_PETSTORE_IMAGE
 
-IMAGE_BASE_NAME = 'openapi-petstore'
+IMAGE_BASE_NAME = "openapi-petstore"
 IMAGE_NAME = os.environ.get(TEST_PETSTORE_IMAGE, lastBuilt(IMAGE_BASE_NAME))
 
 REST_PORT = 8080
@@ -21,10 +21,12 @@ class PetStore(Container):
         rest_port: Optional[int] = REST_PORT,
         **kwargs,
     ):
-        ports = kwargs.pop('portmap', {})
-        ports.update({
-            REST_PORT: rest_port,
-        })
+        ports = kwargs.pop("portmap", {})
+        ports.update(
+            {
+                REST_PORT: rest_port,
+            }
+        )
         super().__init__(name=name, image_name=image_name, portmap=ports, **kwargs)
 
     def getAddress(self) -> str:

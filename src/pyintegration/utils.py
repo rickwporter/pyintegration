@@ -48,7 +48,7 @@ def getLocalIp() -> str:
             hostname = socket.gethostname()
         else:
             # this is a trick for Mac
-            hostname = hostname + '.local'
+            hostname = hostname + ".local"
 
         # try again with the hostname (not FQDN)
         return socket.gethostbyname_ex(hostname)[2][0]

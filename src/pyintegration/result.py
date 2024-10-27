@@ -27,5 +27,3 @@ class Result:
 
     def all(self) -> str:
         return self.out() + "\n" + self.err()
-
-

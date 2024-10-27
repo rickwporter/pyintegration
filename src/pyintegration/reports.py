@@ -32,7 +32,9 @@ def write_reports(results) -> None:
             "errors": count_result(testcases, ERROR),
             "skipped": count_result(testcases, SKIPPED),
             "success": count_result(testcases, SUCCESS),
-            "filename": next(iter(testcases)).filename,  # just grab filename from the first item
+            "filename": next(
+                iter(testcases)
+            ).filename,  # just grab filename from the first item
         }
         print("Suite: " + print_props(suite_props))
 
@@ -48,5 +50,3 @@ def write_reports(results) -> None:
                 "status": test.result,
             }
             print("    Case: " + print_props(case_props))
-
-

@@ -16,6 +16,7 @@ class BackgroundProcess:
 
     If a process should run in the foreground, then it is better to use IntegrationTestCase.command().
     """
+
     def __init__(
         self,
         name: str,
@@ -86,8 +87,8 @@ class BackgroundProcess:
             return_value=0,
             command=self.command,
             timediff=delta,
-            stdout=out.split('\n'),
-            stderr=err.split('\n'),
+            stdout=out.split("\n"),
+            stderr=err.split("\n"),
         )
 
     def terminate(self) -> None:
