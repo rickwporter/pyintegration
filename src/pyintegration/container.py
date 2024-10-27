@@ -203,7 +203,7 @@ class Container(ABC):
             print(cmd)
 
         start = datetime.now()
-        logs = self.logs()[self.last_log_size:]
+        logs = self.logs()[self.last_log_size:]  # fmt: off
         delta = datetime.now() - start
 
         if self.print_output:
