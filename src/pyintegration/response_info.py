@@ -9,7 +9,6 @@ class ResponseInfo:
     status: int = 200
     headers: Union[None, Dict[str, str]] = None
     body: Union[None, str, Dict[str, Any]] = None
-    text: Union[None, str] = None
     filename: Union[None, str] = None
     content_type: Union[None, str] = "application/json"
     capture: Union[None, bool] = None
