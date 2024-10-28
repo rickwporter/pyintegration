@@ -134,3 +134,28 @@ class TestMockServer(IntegrationTestCase):
 
         expected_stats = {f"{m} {SIMPLE_URL}": 1 for m in METHODS}
         self.assertEqual(expected_stats, self.server.get_statistics())
+
+    def test_mock_file(self):
+        base_url = self.address
+        file = Path(__file__).parent.parent / "README.md"
+        self.add_response(
+            SIMPLE_URL, GET, ResponseInfo(filename=str(file), content_type="text/plain")
+        )
+        self.set_server_responses()
+        resp = self.request(f"{base_url}/{SIMPLE_URL}")
+        self.assertEqual(200, resp.status_code)
+        self.assertEqual("text/plain", resp.headers.get(CONTENT_TYPE))
+        self.assertEqual(file.read_bytes(), resp.content)
+
+    def test_mock_capture(self):
+        base_url = self.address
+        body = {"abc": 123, "def": "ghi", "jkl": True}
+        message = "simple error message"
+        self.add_response(
+            SIMPLE_URL, POST, ResponseInfo(body=message, status=403, capture=True)
+        )
+        self.set_server_responses()
+        resp = self.request(f"{base_url}/{SIMPLE_URL}", POST, data=body)
+        self.assertEqual(403, resp.status_code)
+        self.assertIn(message, resp.text)
+        self.assertEqual(body, self.server.get_request_data(SIMPLE_URL))
